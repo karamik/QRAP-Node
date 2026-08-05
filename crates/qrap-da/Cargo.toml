@@ -1,5 +1,5 @@
 [package]
-name = "qrap-utxo"
+name = "qrap-da"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -7,16 +7,20 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
 qrap-crypto = { workspace = true }
-qrap-stark = { workspace = true }
-qrap-storage = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-sha3 = { workspace = true }
-hex = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+sha3 = { workspace = true }
+hex = { workspace = true }
 chrono = { workspace = true }
-bincode = { workspace = true }
-sled = { workspace = true }
 rand = { workspace = true }
+bincode = { workspace = true }
+
+[features]
+default = []
+celestia = []

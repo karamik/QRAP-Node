@@ -4,7 +4,13 @@ members = [
     "crates/qrap-net",
     "crates/qrap-consensus",
     "crates/qrap-utxo",
+    "crates/qrap-storage",
+    "crates/qrap-stark",
     "crates/qrap-node",
+    "crates/qrap-fpga",
+    "crates/qrap-fee-splitter",
+    "crates/qrap-da",
+    "crates/qrap-sim",
 ]
 resolver = "2"
 
@@ -33,9 +39,16 @@ bincode = "1.3"
 chrono = "0.4"
 rand = "0.8"
 async-trait = "0.1"
+sled = "0.34"
 
 # Internal crates
 qrap-crypto = { path = "crates/qrap-crypto" }
 qrap-net = { path = "crates/qrap-net" }
 qrap-consensus = { path = "crates/qrap-consensus" }
 qrap-utxo = { path = "crates/qrap-utxo" }
+qrap-storage = { path = "crates/qrap-storage" }
+qrap-stark = { path = "crates/qrap-stark" }
+qrap-fpga = { path = "crates/qrap-fpga" }
+qrap-fee-splitter = { path = "crates/qrap-fee-splitter" }
+qrap-da = { path = "crates/qrap-da" }
+qrap-sim = { path = "crates/qrap-sim" }

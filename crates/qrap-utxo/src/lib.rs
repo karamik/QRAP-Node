@@ -58,7 +58,7 @@ pub struct SmtNode {
 }
 
 /// Sparse Merkle Tree (256-depth, truncated for storage)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SparseMerkleTree {
     pub root: Hash,
     nodes: HashMap<Hash, SmtNode>,
@@ -103,7 +103,7 @@ impl SparseMerkleTree {
 }
 
 /// Epoch state: nullifier tree + UTXO set snapshot
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EpochState {
     pub epoch_number: u64,
     pub nullifier_tree: SparseMerkleTree,
@@ -143,15 +143,19 @@ pub enum UtxoError {
     InvalidCommitment,
     #[error("Epoch mismatch")]
     EpochMismatch,
+    #[error("Storage error: {0}")]
+    Storage(String),
 }
 
 /// UTXO state manager across epochs
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UtxoState {
     pub current_epoch: u64,
     pub current_block: u64,
     pub epochs: HashMap<u64, EpochState>,
     pub mempool: Vec<Transaction>,
+    #[serde(skip)]
+    db_path: Option<String>,
 }
 
 impl UtxoState {
@@ -163,6 +167,21 @@ impl UtxoState {
             current_block: 0,
             epochs,
             mempool: Vec::new(),
+            db_path: None,
+        }
+    }
+
+    pub fn with_storage(path: &str) -> Result<Self, UtxoError> {
+        let db = sled::open(path).map_err(|e| UtxoError::Storage(e.to_string()))?;
+        if let Some(bytes) = db.get("state").map_err(|e| UtxoError::Storage(e.to_string()))? {
+            let mut state: UtxoState = bincode::deserialize(&bytes)
+                .map_err(|e| UtxoError::Storage(e.to_string()))?;
+            state.db_path = Some(path.to_string());
+            Ok(state)
+        } else {
+            let mut state = Self::new();
+            state.db_path = Some(path.to_string());
+            Ok(state)
         }
     }
 
@@ -199,6 +218,17 @@ impl UtxoState {
     pub fn add_to_mempool(&mut self, tx: Transaction) {
         self.mempool.push(tx);
     }
+
+    pub fn flush(&self) -> Result<(), UtxoError> {
+        if let Some(ref path) = self.db_path {
+            let db = sled::open(path).map_err(|e| UtxoError::Storage(e.to_string()))?;
+            let bytes = bincode::serialize(self)
+                .map_err(|e| UtxoError::Storage(e.to_string()))?;
+            db.insert("state", bytes).map_err(|e| UtxoError::Storage(e.to_string()))?;
+            db.flush().map_err(|e| UtxoError::Storage(e.to_string()))?;
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -228,3 +258,36 @@ mod tests {
         assert_eq!(state.current_epoch, 1);
     }
 }
+
+    #[test]
+    fn test_sled_persistence() {
+        use std::fs;
+        let tmp = format!("{}/qrap_utxo_test_{}", std::env::temp_dir().to_string_lossy(), rand::random::<u64>());
+        let _ = fs::remove_dir_all(&tmp);
+
+        // Phase 1: create, mutate, flush
+        {
+            let mut state = UtxoState::with_storage(&tmp).unwrap();
+            let tx = Transaction {
+                inputs: vec![TxInput { nullifier: [0xAB; 32], spend_proof: vec![] }],
+                outputs: vec![TxOutput { commitment: LweCommitment::new_random(), value: 50 }],
+                fee: 1,
+                nonce: 2,
+            };
+            state.apply_tx(&tx).unwrap();
+            state.advance_block();
+            state.add_to_mempool(tx);
+            state.flush().unwrap();
+        } // sled db closed here
+
+        // Phase 2: reopen and verify crash recovery
+        {
+            let state = UtxoState::with_storage(&tmp).unwrap();
+            assert_eq!(state.current_block, 1);
+            assert_eq!(state.mempool.len(), 1);
+            let epoch = state.epochs.get(&0).unwrap();
+            assert!(epoch.spent_nullifiers.contains(&[0xAB; 32]));
+        }
+
+        let _ = fs::remove_dir_all(&tmp);
+    }

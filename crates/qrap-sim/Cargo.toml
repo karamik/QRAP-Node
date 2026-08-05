@@ -1,33 +1,23 @@
 [package]
-name = "qrap-node"
+name = "qrap-sim"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
-[[bin]]
-name = "qrap-node"
-path = "src/main.rs"
-
 [dependencies]
 qrap-crypto = { workspace = true }
 qrap-net = { workspace = true }
 qrap-consensus = { workspace = true }
 qrap-utxo = { workspace = true }
-qrap-storage = { workspace = true }
 qrap-fpga = { workspace = true }
-clap = { workspace = true }
+qrap-da = { workspace = true }
+qrap-fee-splitter = { workspace = true }
+tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-tokio = { workspace = true }
-anyhow = { workspace = true }
-hex = { workspace = true }
+rand = { workspace = true }
 chrono = { workspace = true }
-
-[features]
-default = []
-versal = ["qrap-fpga/versal"]
-aws-f1 = ["qrap-fpga/aws-f1"]
+hex = { workspace = true }
