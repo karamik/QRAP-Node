@@ -83,3 +83,39 @@ mod tests {
         assert_eq!(kp.secret_key.len(), 3168);
     }
 }
+
+    #[test]
+    fn test_poseidon_different_inputs() {
+        let h1 = poseidon256(b"foo");
+        let h2 = poseidon256(b"bar");
+        assert_ne!(h1, h2, "Different inputs must produce different hashes");
+    }
+
+    #[test]
+    fn test_poseidon_empty_input() {
+        let h = poseidon256(b"");
+        assert_eq!(h.len(), 32, "Empty input must produce 32-byte hash");
+    }
+
+    #[test]
+    fn test_lwe_commitment_deterministic_hash() {
+        let c1 = LweCommitment::new_random();
+        let c2 = c1.clone();
+        assert_eq!(c1.hash(), c2.hash(), "Same commitment must have same hash");
+    }
+
+    #[test]
+    fn test_ml_dsa_sign_and_verify() {
+        let msg = b"hello qrap";
+        let kp = MlKemKeypair::generate();
+        let sig = sign_placeholder(msg, &kp.secret_key);
+        assert!(verify_placeholder(msg, &sig, &kp.public_key));
+    }
+
+    #[test]
+    fn test_ml_dsa_tampered_msg_fails() {
+        let msg = b"hello qrap";
+        let kp = MlKemKeypair::generate();
+        let sig = sign_placeholder(msg, &kp.secret_key);
+        assert!(!verify_placeholder(b"tampered", &sig, &kp.public_key));
+    }
