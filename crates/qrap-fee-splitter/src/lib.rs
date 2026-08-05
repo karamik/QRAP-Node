@@ -12,7 +12,7 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use thiserror::Error;
-use tracing::{info, debug, warn};
+use tracing::{info, debug};
 
 /// Distribution categories
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -336,38 +336,3 @@ mod tests {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_split_total_equals_input() {
-        let dist = Distribution::default();
-        let amount = 1_000_000u64;
-        let (p, v, t, d, b) = split(amount, &dist);
-        assert_eq!(p + v + t + d + b, amount, "Sum must equal input");
-    }
-
-    #[test]
-    fn test_split_nonnegative() {
-        let dist = Distribution::default();
-        let amount = 100u64;
-        let (p, v, t, d, b) = split(amount, &dist);
-        assert!(p >= 0 && v >= 0 && t >= 0 && d >= 0 && b >= 0);
-    }
-
-    #[test]
-    fn test_burn_never_negative() {
-        let dist = Distribution::default();
-        for amount in [100, 500, 1000, 10000] {
-            let (_, _, _, _, b) = split(amount, &dist);
-            assert!(b >= 0, "Burn negative at amount {}", amount);
-        }
-    }
-
-    #[test]
-    fn test_distribution_sum_is_100() {
-        let dist = Distribution::default();
-        assert_eq!(dist.provers + dist.validators + dist.treasury + dist.da_layer + dist.burn, 100);
-    }
-}
