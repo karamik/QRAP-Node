@@ -86,18 +86,14 @@ pub struct RoundState {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default)]
 pub enum ConsensusStep {
+    #[default]
     NewHeight,
     Propose,
     Prepare,
     Commit,
     Decide,
-}
-
-impl Default for ConsensusStep {
-    fn default() -> Self {
-        ConsensusStep::NewHeight
-    }
 }
 
 #[derive(Debug, Error)]

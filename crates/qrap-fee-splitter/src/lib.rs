@@ -108,6 +108,12 @@ pub struct FeeSplitter {
     pub current_epoch: u64,
 }
 
+impl Default for FeeSplitter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FeeSplitter {
     pub fn new() -> Self {
         let mut distribution = HashMap::new();
@@ -175,16 +181,12 @@ impl FeeSplitter {
         };
 
         // Validator weighting: stake × uptime
-        let total_weight: u128 = validators
+        let _total_weight: u128 = validators
             .iter()
             .map(|v| v.stake as u128 * v.uptime_secs as u128)
             .sum();
 
-        let validators_final = if total_weight > 0 {
-            validators_base // Simplified — in real impl, weighted per-validator
-        } else {
-            validators_base
-        };
+        let validators_final = validators_base; // TODO: weighted per-validator in production
 
         let provers_final = provers_base + prover_bonus;
 
@@ -230,11 +232,7 @@ impl FeeSplitter {
         let mut max_change: u16 = 0;
         for (dist, &new_pct) in &new_distribution {
             let old_pct = self.distribution.get(dist).copied().unwrap_or(0);
-            let change = if new_pct > old_pct {
-                new_pct - old_pct
-            } else {
-                old_pct - new_pct
-            };
+            let change = new_pct.abs_diff(old_pct);
             max_change = max_change.max(change);
         }
 

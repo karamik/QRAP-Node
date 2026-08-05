@@ -65,6 +65,12 @@ pub struct SparseMerkleTree {
     leaves: HashMap<Hash, Hash>, // path -> leaf hash
 }
 
+impl Default for SparseMerkleTree {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SparseMerkleTree {
     pub fn new() -> Self {
         Self {
