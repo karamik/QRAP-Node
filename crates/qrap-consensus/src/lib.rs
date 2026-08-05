@@ -85,8 +85,7 @@ pub struct RoundState {
     pub locked_block: Option<Hash>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub enum ConsensusStep {
     #[default]
     NewHeight,
