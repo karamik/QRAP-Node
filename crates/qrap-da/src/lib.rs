@@ -508,5 +508,4 @@ mod tests {
         let result = verifier.verify_blob_in_header(&blob, &header, &proof);
         assert!(matches!(result, Err(DaError::NamespaceMismatch)));
     }
-
 }
