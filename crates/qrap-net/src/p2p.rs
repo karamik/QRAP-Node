@@ -1,7 +1,7 @@
 use crate::codec::{encode, decode_one};
 use crate::transport::{connect_peer, write_all};
 use tokio::net::TcpStream;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncReadExt;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -112,7 +112,7 @@ impl MeshNetwork {
 
 async fn handle_inbound(
     mut stream: TcpStream,
-    addr: SocketAddr,
+    _addr: SocketAddr,
     _local_id: NodeId,
     _peers: Arc<Mutex<HashMap<NodeId, PeerConn>>>,
     inbound: mpsc::UnboundedSender<(NodeId, P2pMessage)>,
@@ -148,7 +148,7 @@ async fn handle_inbound(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     #[test] fn test_node_id_display() {
         let id = [0xab; 32];
         assert_eq!(hex::encode(&id[..4]), "abababab");

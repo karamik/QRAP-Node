@@ -7,16 +7,14 @@
 //! - FPGA degradation: power state switching under load
 //! - DA unavailability: Celestia blob submission failures
 
-use qrap_crypto::{Hash, poseidon256, LweCommitment};
+use qrap_crypto::LweCommitment;
 use qrap_consensus::OrbitalBft;
-use qrap_net::{MeshNetwork, PeerConfig, NodeId, P2pMessage};
+use qrap_net::NodeId;
 use qrap_utxo::{Transaction, TxInput, TxOutput, UtxoState};
 use qrap_fpga::{MockFpga, FpgaProver, PowerState, PlonkInput};
 use qrap_da::{MockDaClient, Blob, Namespace};
 use qrap_fee_splitter::{FeeSplitter, ProverInfo, ValidatorInfo};
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use qrap_da::DaClient;
 use tracing::{info, warn, debug};
 

@@ -1,7 +1,6 @@
 //! QRAP Cryptographic Primitives
 use sha3::{Digest, Sha3_256};
 use serde::{Serialize, Deserialize};
-use rand::Rng;
 
 pub const HASH_LEN: usize = 32;
 pub const LWE_N: usize = 1024;

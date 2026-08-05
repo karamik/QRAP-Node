@@ -1,0 +1,331 @@
+    Checking qrap-crypto v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-crypto)
+    Checking qrap-fee-splitter v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-fee-splitter)
+warning: unused import: `rand::Rng`
+ --> crates/qrap-crypto/src/lib.rs:4:5
+  |
+4 | use rand::Rng;
+  |     ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `qrap-crypto` (lib) generated 1 warning (1 duplicate)
+    Checking qrap-stark v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-stark)
+    Checking qrap-net v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-net)
+    Checking qrap-da v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-da)
+warning: `qrap-crypto` (lib test) generated 1 warning (run `cargo clippy --fix --lib -p qrap-crypto --tests -- ` to apply 1 suggestion)
+warning: unused import: `AsyncWriteExt`
+ --> crates/qrap-net/src/p2p.rs:4:31
+  |
+4 | use tokio::io::{AsyncReadExt, AsyncWriteExt};
+  |                               ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `error`
+ --> crates/qrap-net/src/rpc.rs:6:27
+  |
+6 | use tracing::{info, warn, error};
+  |                           ^^^^^
+
+warning: unused import: `super::*`
+   --> crates/qrap-net/src/p2p.rs:151:9
+    |
+151 |     use super::*;
+    |         ^^^^^^^^
+
+warning: unused variable: `addr`
+   --> crates/qrap-net/src/p2p.rs:115:5
+    |
+115 |     addr: SocketAddr,
+    |     ^^^^ help: if this is intentional, prefix it with an underscore: `_addr`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+    Checking qrap-utxo v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-utxo)
+    Checking qrap-fpga v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-fpga)
+warning: you should consider adding a `Default` implementation for `FeeSplitter`
+   --> crates/qrap-fee-splitter/src/lib.rs:112:5
+    |
+112 | /     pub fn new() -> Self {
+113 | |         let mut distribution = HashMap::new();
+114 | |         distribution.insert(Distribution::Provers, 35);
+115 | |         distribution.insert(Distribution::Validators, ...
+...   |
+126 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#new_without_default
+    = note: `#[warn(clippy::new_without_default)]` on by default
+help: try adding this
+    |
+111 + impl Default for FeeSplitter {
+112 +     fn default() -> Self {
+113 +         Self::new()
+114 +     }
+115 + }
+    |
+
+warning: this `if` has identical blocks
+   --> crates/qrap-fee-splitter/src/lib.rs:167:52
+    |
+167 |   ...   let validators_final = if total_weight > 0 {
+    |  __________________________________________________^
+168 | | ...       validators_base // Simplified — in real impl...
+169 | | ...   } else {
+    | |_______^
+    |
+note: same as this
+   --> crates/qrap-fee-splitter/src/lib.rs:169:16
+    |
+169 |           } else {
+    |  ________________^
+170 | |             validators_base
+171 | |         };
+    | |_________^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#if_same_then_else
+    = note: `#[warn(clippy::if_same_then_else)]` on by default
+
+warning: manual absolute difference pattern without using `abs_diff`
+   --> crates/qrap-fee-splitter/src/lib.rs:213:26
+    |
+213 | ... = if new_pct > old_pct { new_pct - old_pct } else { old_pct - new_pct };
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with `abs_diff`: `new_pct.abs_diff(old_pct)`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#manual_abs_diff
+    = note: `#[warn(clippy::manual_abs_diff)]` on by default
+
+warning: `qrap-fee-splitter` (lib test) generated 3 warnings (3 duplicates)
+warning: `qrap-fee-splitter` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p qrap-fee-splitter -- ` to apply 2 suggestions)
+warning: `qrap-net` (lib test) generated 4 warnings (3 duplicates) (run `cargo clippy --fix --lib -p qrap-net --tests -- ` to apply 1 suggestion)
+warning: `qrap-net` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p qrap-net -- ` to apply 3 suggestions)
+warning: the borrowed expression implements the required traits
+  --> crates/qrap-da/src/lib.rs:29:21
+   |
+29 |         hex::encode(&self.0)
+   |                     ^^^^^^^ help: change this to: `self.0`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#needless_borrows_for_generic_args
+   = note: `#[warn(clippy::needless_borrows_for_generic_args)]` on by default
+
+warning: unused import: `Duration`
+ --> crates/qrap-fpga/src/versal/mod.rs:7:26
+  |
+7 | use std::time::{Instant, Duration};
+  |                          ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: you should consider adding a `Default` implementation for `SparseMerkleTree`
+  --> crates/qrap-utxo/src/lib.rs:69:5
+   |
+69 | /     pub fn new() -> Self {
+70 | |         Self {
+71 | |             root: [0u8; 32],
+72 | |             nodes: HashMap::new(),
+...  |
+75 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#new_without_default
+   = note: `#[warn(clippy::new_without_default)]` on by default
+help: try adding this
+   |
+68 + impl Default for SparseMerkleTree {
+69 +     fn default() -> Self {
+70 +         Self::new()
+71 +     }
+72 + }
+   |
+
+warning: you should consider adding a `Default` implementation for `UtxoState`
+   --> crates/qrap-utxo/src/lib.rs:162:5
+    |
+162 | /     pub fn new() -> Self {
+163 | |         let mut epochs = HashMap::new();
+164 | |         epochs.insert(0, EpochState::new(0));
+165 | |         Self {
+...   |
+172 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#new_without_default
+help: try adding this
+    |
+161 + impl Default for UtxoState {
+162 +     fn default() -> Self {
+163 +         Self::new()
+164 +     }
+165 + }
+    |
+
+warning: `qrap-da` (lib test) generated 1 warning (run `cargo clippy --fix --lib -p qrap-da --tests -- ` to apply 1 suggestion)
+warning: `qrap-da` (lib) generated 1 warning (1 duplicate)
+warning: `qrap-utxo` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p qrap-utxo -- ` to apply 2 suggestions)
+    Checking qrap-consensus v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-consensus)
+warning: field `bitstream_version` is never read
+  --> crates/qrap-fpga/src/versal/mod.rs:99:5
+   |
+95 | pub struct VersalProver {
+   |            ------------ field in this struct
+...
+99 |     bitstream_version: String,
+   |     ^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: you should consider adding a `Default` implementation for `MockFpga`
+   --> crates/qrap-fpga/src/lib.rs:113:5
+    |
+113 | /     pub fn new() -> Self {
+114 | |         Self {
+115 | |             health: FpgaHealth {
+116 | |                 temperature_c: 35.0,
+...   |
+126 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#new_without_default
+    = note: `#[warn(clippy::new_without_default)]` on by default
+help: try adding this
+    |
+112 + impl Default for MockFpga {
+113 +     fn default() -> Self {
+114 +         Self::new()
+115 +     }
+116 + }
+    |
+
+warning: the loop variable `i` is used to index `ntt_out`
+  --> crates/qrap-fpga/src/aws_f1/prover.rs:65:18
+   |
+65 |         for i in 0..ntt_out.len() {
+   |                  ^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#needless_range_loop
+   = note: `#[warn(clippy::needless_range_loop)]` on by default
+help: consider using an iterator and enumerate()
+   |
+65 -         for i in 0..ntt_out.len() {
+65 +         for (i, <item>) in ntt_out.iter_mut().enumerate() {
+   |
+
+warning: `qrap-utxo` (lib test) generated 2 warnings (2 duplicates)
+warning: you should consider adding a `Default` implementation for `TmrVoter<T>`
+  --> crates/qrap-fpga/src/versal/mod.rs:27:5
+   |
+27 | /     pub fn new() -> Self {
+28 | |         Self { modules: [None, None, None] }
+29 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#new_without_default
+help: try adding this
+   |
+26 + impl<T: Clone + PartialEq> Default for TmrVoter<T> {
+27 +     fn default() -> Self {
+28 +         Self::new()
+29 +     }
+30 + }
+   |
+
+warning: you should consider adding a `Default` implementation for `RadHardState`
+  --> crates/qrap-fpga/src/versal/mod.rs:65:5
+   |
+65 | /     pub fn new() -> Self {
+66 | |         Self {
+67 | |             checkpoints: VecDeque::with_capacity(10),
+68 | |             max_checkpoints: 10,
+...  |
+73 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#new_without_default
+help: try adding this
+   |
+64 + impl Default for RadHardState {
+65 +     fn default() -> Self {
+66 +         Self::new()
+67 +     }
+68 + }
+   |
+
+warning: you should consider adding a `Default` implementation for `VersalProver`
+   --> crates/qrap-fpga/src/versal/mod.rs:105:5
+    |
+105 | /     pub fn new() -> Self {
+106 | |         Self {
+107 | |             health: FpgaHealth {
+108 | |                 temperature_c: -40.0, voltage_core: 0.72,
+...   |
+118 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#new_without_default
+help: try adding this
+    |
+104 + impl Default for VersalProver {
+105 +     fn default() -> Self {
+106 +         Self::new()
+107 +     }
+108 + }
+    |
+
+warning: `qrap-fpga` (lib) generated 7 warnings (run `cargo clippy --fix --lib -p qrap-fpga -- ` to apply 5 suggestions)
+warning: this `impl` can be derived
+  --> crates/qrap-consensus/src/lib.rs:97:1
+   |
+97 | / impl Default for ConsensusStep {
+98 | |     fn default() -> Self { ConsensusStep::NewHeight }
+99 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.96.0/index.html#derivable_impls
+   = note: `#[warn(clippy::derivable_impls)]` on by default
+help: replace the manual implementation with a derive attribute and mark the default variant
+   |
+89 + #[derive(Default)]
+90 | pub enum ConsensusStep {
+91 ~     #[default]
+92 ~     NewHeight,
+   |
+
+warning: `qrap-fpga` (lib test) generated 7 warnings (7 duplicates)
+warning: `qrap-consensus` (lib) generated 1 warning (run `cargo clippy --fix --lib -p qrap-consensus -- ` to apply 1 suggestion)
+    Checking qrap-node v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-node)
+    Checking qrap-sim v0.2.0-alpha (/data/data/com.termux/files/home/QRAP-Node/crates/qrap-sim)
+warning: `qrap-consensus` (lib test) generated 1 warning (1 duplicate)
+warning: unused imports: `Hash` and `poseidon256`
+  --> crates/qrap-sim/src/lib.rs:10:19
+   |
+10 | use qrap_crypto::{Hash, poseidon256, LweCommitment};
+   |                   ^^^^  ^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `MeshNetwork`, `P2pMessage`, and `PeerConfig`
+  --> crates/qrap-sim/src/lib.rs:12:16
+   |
+12 | use qrap_net::{MeshNetwork, PeerConfig, NodeId, P2pMessage};
+   |                ^^^^^^^^^^^  ^^^^^^^^^^          ^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> crates/qrap-sim/src/lib.rs:17:5
+   |
+17 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> crates/qrap-sim/src/lib.rs:18:5
+   |
+18 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `Duration`
+  --> crates/qrap-sim/src/lib.rs:19:17
+   |
+19 | use std::time::{Duration, Instant};
+   |                 ^^^^^^^^
+
+warning: `qrap-sim` (lib) generated 5 warnings (run `cargo clippy --fix --lib -p qrap-sim -- ` to apply 5 suggestions)
+warning: `qrap-sim` (lib test) generated 5 warnings (5 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.94s

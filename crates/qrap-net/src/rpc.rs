@@ -3,7 +3,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use std::net::SocketAddr;
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 use anyhow::Result;
 use async_trait::async_trait;
 

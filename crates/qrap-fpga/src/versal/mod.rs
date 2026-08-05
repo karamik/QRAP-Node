@@ -4,7 +4,7 @@ use crate::{FpgaProver, FpgaHealth, PowerState, PlonkInput, PlonkProof, FpgaErro
 use async_trait::async_trait;
 use qrap_crypto::poseidon256_pair;
 use tracing::{info, debug, warn};
-use std::time::{Instant, Duration};
+use std::time::Instant;
 use std::collections::VecDeque;
 
 pub struct XiisemConfig {
