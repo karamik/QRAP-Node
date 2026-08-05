@@ -158,6 +158,12 @@ pub struct UtxoState {
     db_path: Option<String>,
 }
 
+impl Default for UtxoState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UtxoState {
     pub fn new() -> Self {
         let mut epochs = HashMap::new();
