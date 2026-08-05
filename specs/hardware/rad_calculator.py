@@ -13,10 +13,11 @@ def leo_tid(alt, inc, days, shield=3.0):
 print("=" * 40)
 print("QRAP Radiation Calculator")
 print("=" * 40)
+
 for name, alt, inc, days, shield in [
     ("ISS 1yr", 400, 51.6, 365, 3.0),
     ("Starlink 5yr", 550, 53, 365*5, 5.0),
 ]:
     r = leo_tid(alt, inc, days, shield)
-    print(f"
-{name}: {r["total"]} krad | Margin: {r["margin"]} | {'PASS' if r['pass'] else 'FAIL'}")
+    status = "PASS" if r["pass"] else "FAIL"
+    print(f"\n{name}: {r['total']} krad | Margin: {r['margin']} | {status}")
