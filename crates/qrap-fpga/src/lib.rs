@@ -109,6 +109,12 @@ pub struct MockFpga {
     start_time: Instant,
 }
 
+impl Default for MockFpga {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockFpga {
     pub fn new() -> Self {
         Self {

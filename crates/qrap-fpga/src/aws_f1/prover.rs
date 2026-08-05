@@ -70,8 +70,8 @@ impl AwsF1Prover {
         let target = self.power.target_time();
 
         let mut ntt_out = vec![0u8; 1024 * 1024];
-        for i in 0..ntt_out.len() {
-            ntt_out[i] = ((i * 7 + 13) % 256) as u8;
+        for (i, item) in ntt_out.iter_mut().enumerate() {
+            *item = ((i * 7 + 13) % 256) as u8;
         }
         std::thread::sleep(Duration::from_millis(2500));
 

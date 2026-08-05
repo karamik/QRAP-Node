@@ -27,6 +27,12 @@ pub struct TmrVoter<T: Clone + PartialEq> {
     modules: [Option<T>; 3],
 }
 
+impl<T: Clone + PartialEq> Default for TmrVoter<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: Clone + PartialEq> TmrVoter<T> {
     pub fn new() -> Self {
         Self {
@@ -73,6 +79,12 @@ pub struct RadHardState {
     pub last_scrub: Instant,
 }
 
+impl Default for RadHardState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RadHardState {
     pub fn new() -> Self {
         Self {
@@ -114,9 +126,15 @@ pub struct VersalProver {
     health: FpgaHealth,
     power: PowerState,
     start_time: Instant,
-    bitstream_version: String,
+    _bitstream_version: String,
     rad_state: RadHardState,
     fault_injection_enabled: bool,
+}
+
+impl Default for VersalProver {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl VersalProver {
@@ -132,7 +150,7 @@ impl VersalProver {
             },
             power: PowerState::Eco,
             start_time: Instant::now(),
-            bitstream_version: "versal-plonk-v1.0.0".to_string(),
+            _bitstream_version: "versal-plonk-v1.0.0".to_string(),
             rad_state: RadHardState::new(),
             fault_injection_enabled: cfg!(test),
         }
