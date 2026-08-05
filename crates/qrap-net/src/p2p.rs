@@ -1,14 +1,14 @@
-use crate::codec::{encode, decode_one};
+use crate::codec::{decode_one, encode};
 use crate::transport::{connect_peer, write_all};
-use tokio::net::TcpStream;
-use tokio::io::AsyncReadExt;
-use serde::{Serialize, Deserialize};
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use tokio::io::AsyncReadExt;
+use tokio::net::TcpStream;
 use tokio::sync::mpsc;
-use tracing::{info, warn, error};
-use anyhow::Result;
+use tracing::{error, info, warn};
 
 pub type NodeId = [u8; 32];
 
@@ -67,20 +67,29 @@ impl MeshNetwork {
 
     pub async fn dial_peers(&self, configs: &[PeerConfig]) -> Result<()> {
         for peer in configs {
-            if peer.id == self.local_id { continue; }
+            if peer.id == self.local_id {
+                continue;
+            }
             let stream = connect_peer(peer.addr).await?;
             let (tx, mut rx) = mpsc::unbounded_channel::<P2pMessage>();
             {
                 let mut peers = self.peers.lock().unwrap();
                 peers.insert(peer.id, PeerConn { tx });
             }
-            info!("Dialed peer {} at {}", hex::encode(&peer.id[..4]), peer.addr);
+            info!(
+                "Dialed peer {} at {}",
+                hex::encode(&peer.id[..4]),
+                peer.addr
+            );
             tokio::spawn(async move {
                 let mut stream = stream;
                 while let Some(msg) = rx.recv().await {
                     let buf = match encode(&msg) {
                         Ok(b) => b,
-                        Err(e) => { error!("Encode error: {}", e); continue; }
+                        Err(e) => {
+                            error!("Encode error: {}", e);
+                            continue;
+                        }
                     };
                     if let Err(e) = write_all(&mut stream, &buf).await {
                         error!("Write to peer failed: {}", e);
@@ -103,7 +112,8 @@ impl MeshNetwork {
 
     pub fn send_to(&self, peer_id: &NodeId, msg: P2pMessage) -> Result<()> {
         let peers = self.peers.lock().unwrap();
-        let conn = peers.get(peer_id)
+        let conn = peers
+            .get(peer_id)
             .ok_or_else(|| anyhow::anyhow!("Peer not found"))?;
         conn.tx.send(msg)?;
         Ok(())
@@ -123,7 +133,9 @@ async fn handle_inbound(
 
     loop {
         let n = stream.read(&mut buf[cursor..]).await?;
-        if n == 0 { break; }
+        if n == 0 {
+            break;
+        }
         cursor += n;
         let mut consumed = 0usize;
         while consumed < cursor {
@@ -148,8 +160,9 @@ async fn handle_inbound(
 
 #[cfg(test)]
 mod tests {
-    
-    #[test] fn test_node_id_display() {
+
+    #[test]
+    fn test_node_id_display() {
         let id = [0xab; 32];
         assert_eq!(hex::encode(&id[..4]), "abababab");
     }

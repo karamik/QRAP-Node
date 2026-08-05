@@ -7,11 +7,11 @@
 //!
 //! Power states: Full (67W/1.6s), Balanced (45W/2.2s), Eco (25W/4s)
 
-use qrap_crypto::{Hash, poseidon256_pair};
-use serde::{Serialize, Deserialize};
+use qrap_crypto::{poseidon256_pair, Hash};
+use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use thiserror::Error;
-use tracing::{info, debug, warn};
+use tracing::{debug, info, warn};
 
 /// FPGA power state
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -131,14 +131,20 @@ impl MockFpga {
         let mut hash = [0u8; 32];
         for (i, nf) in input.nullifiers.iter().enumerate() {
             hash = poseidon256_pair(&hash, nf);
-            if i % 100 == 0 { std::thread::sleep(Duration::from_micros(10)); }
+            if i % 100 == 0 {
+                std::thread::sleep(Duration::from_micros(10));
+            }
         }
         for (i, cm) in input.commitments.iter().enumerate() {
             hash = poseidon256_pair(&hash, cm);
-            if i % 100 == 0 { std::thread::sleep(Duration::from_micros(10)); }
+            if i % 100 == 0 {
+                std::thread::sleep(Duration::from_micros(10));
+            }
         }
         let elapsed = start.elapsed();
-        if elapsed < target { std::thread::sleep(target - elapsed); }
+        if elapsed < target {
+            std::thread::sleep(target - elapsed);
+        }
         let total = start.elapsed();
         let energy_j = self.power.power_watts() as f64 * total.as_secs_f64();
         PlonkProof {
@@ -163,7 +169,10 @@ impl FpgaProver for MockFpga {
         }
         let proof = self.mock_prove(&input);
         self.health.scrubber_cycles += 1;
-        info!("MockFPGA proof: {}ms, {}mJ", proof.generation_time_ms, proof.power_consumed_mj);
+        info!(
+            "MockFPGA proof: {}ms, {}mJ",
+            proof.generation_time_ms, proof.power_consumed_mj
+        );
         Ok(proof)
     }
     async fn set_power(&mut self, state: PowerState) -> Result<(), FpgaError> {

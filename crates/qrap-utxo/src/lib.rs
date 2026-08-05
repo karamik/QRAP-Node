@@ -3,11 +3,11 @@
 //! Stateless UTXO model with Ring-LWE commitments and epoch-based
 //! nullifier pruning for bounded storage.
 
-use qrap_crypto::{Hash, poseidon256, poseidon256_pair, LweCommitment};
-use serde::{Serialize, Deserialize};
+use qrap_crypto::{poseidon256, poseidon256_pair, Hash, LweCommitment};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use tracing::{info, debug};
 use thiserror::Error;
+use tracing::{debug, info};
 
 pub const EPOCH_LENGTH: u64 = 100; // blocks per epoch
 
@@ -173,9 +173,12 @@ impl UtxoState {
 
     pub fn with_storage(path: &str) -> Result<Self, UtxoError> {
         let db = sled::open(path).map_err(|e| UtxoError::Storage(e.to_string()))?;
-        if let Some(bytes) = db.get("state").map_err(|e| UtxoError::Storage(e.to_string()))? {
-            let mut state: UtxoState = bincode::deserialize(&bytes)
-                .map_err(|e| UtxoError::Storage(e.to_string()))?;
+        if let Some(bytes) = db
+            .get("state")
+            .map_err(|e| UtxoError::Storage(e.to_string()))?
+        {
+            let mut state: UtxoState =
+                bincode::deserialize(&bytes).map_err(|e| UtxoError::Storage(e.to_string()))?;
             state.db_path = Some(path.to_string());
             Ok(state)
         } else {
@@ -186,7 +189,9 @@ impl UtxoState {
     }
 
     pub fn apply_tx(&mut self, tx: &Transaction) -> Result<(), UtxoError> {
-        let epoch = self.epochs.get_mut(&self.current_epoch)
+        let epoch = self
+            .epochs
+            .get_mut(&self.current_epoch)
             .ok_or(UtxoError::EpochMismatch)?;
         for input in &tx.inputs {
             epoch.spend(&input.nullifier)?;
@@ -194,7 +199,11 @@ impl UtxoState {
         for output in &tx.outputs {
             epoch.utxo_commitments.push(output.commitment.hash());
         }
-        debug!("Applied tx {}, epoch {}", hex::encode(&tx.hash()[..4]), self.current_epoch);
+        debug!(
+            "Applied tx {}, epoch {}",
+            hex::encode(&tx.hash()[..4]),
+            self.current_epoch
+        );
         Ok(())
     }
 
@@ -205,7 +214,9 @@ impl UtxoState {
             info!("Rolling over to epoch {}", new_epoch);
             self.current_epoch = new_epoch;
             self.epochs.insert(new_epoch, EpochState::new(new_epoch));
-            let to_remove: Vec<_> = self.epochs.keys()
+            let to_remove: Vec<_> = self
+                .epochs
+                .keys()
                 .filter(|&&e| e + 3 < new_epoch)
                 .copied()
                 .collect();
@@ -222,9 +233,9 @@ impl UtxoState {
     pub fn flush(&self) -> Result<(), UtxoError> {
         if let Some(ref path) = self.db_path {
             let db = sled::open(path).map_err(|e| UtxoError::Storage(e.to_string()))?;
-            let bytes = bincode::serialize(self)
+            let bytes = bincode::serialize(self).map_err(|e| UtxoError::Storage(e.to_string()))?;
+            db.insert("state", bytes)
                 .map_err(|e| UtxoError::Storage(e.to_string()))?;
-            db.insert("state", bytes).map_err(|e| UtxoError::Storage(e.to_string()))?;
             db.flush().map_err(|e| UtxoError::Storage(e.to_string()))?;
         }
         Ok(())
@@ -240,8 +251,14 @@ mod tests {
         let mut state = UtxoState::new();
         let nf = [0x01; 32];
         let tx = Transaction {
-            inputs: vec![TxInput { nullifier: nf, spend_proof: vec![] }],
-            outputs: vec![TxOutput { commitment: LweCommitment::new_random(), value: 100 }],
+            inputs: vec![TxInput {
+                nullifier: nf,
+                spend_proof: vec![],
+            }],
+            outputs: vec![TxOutput {
+                commitment: LweCommitment::new_random(),
+                value: 100,
+            }],
             fee: 1,
             nonce: 1,
         };
@@ -259,35 +276,45 @@ mod tests {
     }
 }
 
-    #[test]
-    fn test_sled_persistence() {
-        use std::fs;
-        let tmp = format!("{}/qrap_utxo_test_{}", std::env::temp_dir().to_string_lossy(), rand::random::<u64>());
-        let _ = fs::remove_dir_all(&tmp);
+#[test]
+fn test_sled_persistence() {
+    use std::fs;
+    let tmp = format!(
+        "{}/qrap_utxo_test_{}",
+        std::env::temp_dir().to_string_lossy(),
+        rand::random::<u64>()
+    );
+    let _ = fs::remove_dir_all(&tmp);
 
-        // Phase 1: create, mutate, flush
-        {
-            let mut state = UtxoState::with_storage(&tmp).unwrap();
-            let tx = Transaction {
-                inputs: vec![TxInput { nullifier: [0xAB; 32], spend_proof: vec![] }],
-                outputs: vec![TxOutput { commitment: LweCommitment::new_random(), value: 50 }],
-                fee: 1,
-                nonce: 2,
-            };
-            state.apply_tx(&tx).unwrap();
-            state.advance_block();
-            state.add_to_mempool(tx);
-            state.flush().unwrap();
-        } // sled db closed here
+    // Phase 1: create, mutate, flush
+    {
+        let mut state = UtxoState::with_storage(&tmp).unwrap();
+        let tx = Transaction {
+            inputs: vec![TxInput {
+                nullifier: [0xAB; 32],
+                spend_proof: vec![],
+            }],
+            outputs: vec![TxOutput {
+                commitment: LweCommitment::new_random(),
+                value: 50,
+            }],
+            fee: 1,
+            nonce: 2,
+        };
+        state.apply_tx(&tx).unwrap();
+        state.advance_block();
+        state.add_to_mempool(tx);
+        state.flush().unwrap();
+    } // sled db closed here
 
-        // Phase 2: reopen and verify crash recovery
-        {
-            let state = UtxoState::with_storage(&tmp).unwrap();
-            assert_eq!(state.current_block, 1);
-            assert_eq!(state.mempool.len(), 1);
-            let epoch = state.epochs.get(&0).unwrap();
-            assert!(epoch.spent_nullifiers.contains(&[0xAB; 32]));
-        }
-
-        let _ = fs::remove_dir_all(&tmp);
+    // Phase 2: reopen and verify crash recovery
+    {
+        let state = UtxoState::with_storage(&tmp).unwrap();
+        assert_eq!(state.current_block, 1);
+        assert_eq!(state.mempool.len(), 1);
+        let epoch = state.epochs.get(&0).unwrap();
+        assert!(epoch.spent_nullifiers.contains(&[0xAB; 32]));
     }
+
+    let _ = fs::remove_dir_all(&tmp);
+}

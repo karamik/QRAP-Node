@@ -3,16 +3,16 @@
 //! 4-validator testnet with 12s block time.
 //! Phases: Propose -> Prepare -> Commit -> Decide
 
-use qrap_crypto::{Hash, poseidon256};
-use qrap_net::{MeshNetwork, P2pMessage, NodeId};
+use chrono::Utc;
+use qrap_crypto::{poseidon256, Hash};
+use qrap_net::{MeshNetwork, NodeId, P2pMessage};
 use qrap_utxo::{Transaction, UtxoState};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use tokio::sync::{mpsc, RwLock};
-use tracing::{info, warn, debug};
 use thiserror::Error;
-use chrono::Utc;
+use tokio::sync::{mpsc, RwLock};
+use tracing::{debug, info, warn};
 
 pub const BLOCK_TIME_SECS: u64 = 3;
 pub const VALIDATOR_COUNT: usize = 4;
@@ -95,7 +95,9 @@ pub enum ConsensusStep {
 }
 
 impl Default for ConsensusStep {
-    fn default() -> Self { ConsensusStep::NewHeight }
+    fn default() -> Self {
+        ConsensusStep::NewHeight
+    }
 }
 
 #[derive(Debug, Error)]
@@ -136,7 +138,10 @@ impl OrbitalBft {
 
     /// Start consensus event loop
     pub async fn run(&self, mut msg_rx: mpsc::UnboundedReceiver<(NodeId, P2pMessage)>) {
-        info!("Orbital BFT started for node {}", hex::encode(&self.local_id[..4]));
+        info!(
+            "Orbital BFT started for node {}",
+            hex::encode(&self.local_id[..4])
+        );
         let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(BLOCK_TIME_SECS));
 
         loop {
@@ -194,7 +199,10 @@ impl OrbitalBft {
             state_root: [0u8; 32], // placeholder
             proposer: self.local_id,
         };
-        let block = Block { header, transactions: txs };
+        let block = Block {
+            header,
+            transactions: txs,
+        };
         let block_hash = block.hash();
 
         {
@@ -213,10 +221,25 @@ impl OrbitalBft {
         Ok(())
     }
 
-    async fn handle_consensus_msg(&self, _peer: NodeId, msg: ConsensusMsg) -> Result<(), ConsensusError> {
+    async fn handle_consensus_msg(
+        &self,
+        _peer: NodeId,
+        msg: ConsensusMsg,
+    ) -> Result<(), ConsensusError> {
         match msg {
-            ConsensusMsg::Propose { height, round, block_hash, proposer, .. } => {
-                debug!("Received Propose from {} for h={} r={}", hex::encode(&proposer[..4]), height, round);
+            ConsensusMsg::Propose {
+                height,
+                round,
+                block_hash,
+                proposer,
+                ..
+            } => {
+                debug!(
+                    "Received Propose from {} for h={} r={}",
+                    hex::encode(&proposer[..4]),
+                    height,
+                    round
+                );
                 let mut state = self.state.write().await;
                 if state.step == ConsensusStep::NewHeight || state.step == ConsensusStep::Propose {
                     state.step = ConsensusStep::Prepare;
@@ -233,10 +256,24 @@ impl OrbitalBft {
                     self.broadcast_consensus(prepare).await;
                 }
             }
-            ConsensusMsg::Prepare { height, round, block_hash, validator, .. } => {
+            ConsensusMsg::Prepare {
+                height,
+                round,
+                block_hash,
+                validator,
+                ..
+            } => {
                 let mut state = self.state.write().await;
-                state.prepare_votes.entry(block_hash).or_default().insert(validator);
-                let votes = state.prepare_votes.get(&block_hash).map(|s| s.len()).unwrap_or(0);
+                state
+                    .prepare_votes
+                    .entry(block_hash)
+                    .or_default()
+                    .insert(validator);
+                let votes = state
+                    .prepare_votes
+                    .get(&block_hash)
+                    .map(|s| s.len())
+                    .unwrap_or(0);
                 if votes >= quorum(self.validators.len()) && state.step == ConsensusStep::Prepare {
                     state.step = ConsensusStep::Commit;
                     drop(state);
@@ -250,12 +287,31 @@ impl OrbitalBft {
                     self.broadcast_consensus(commit).await;
                 }
             }
-            ConsensusMsg::Commit { height, round, block_hash, validator, .. } => {
+            ConsensusMsg::Commit {
+                height,
+                round,
+                block_hash,
+                validator,
+                ..
+            } => {
                 let mut state = self.state.write().await;
-                state.commit_votes.entry(block_hash).or_default().insert(validator);
-                let votes = state.commit_votes.get(&block_hash).map(|s| s.len()).unwrap_or(0);
+                state
+                    .commit_votes
+                    .entry(block_hash)
+                    .or_default()
+                    .insert(validator);
+                let votes = state
+                    .commit_votes
+                    .get(&block_hash)
+                    .map(|s| s.len())
+                    .unwrap_or(0);
                 if votes >= quorum(self.validators.len()) && state.step == ConsensusStep::Commit {
-                    info!("Quorum reached for block {} at h={} r={}", hex::encode(&block_hash[..4]), height, round);
+                    info!(
+                        "Quorum reached for block {} at h={} r={}",
+                        hex::encode(&block_hash[..4]),
+                        height,
+                        round
+                    );
                     state.step = ConsensusStep::Decide;
                     state.height += 1;
                     state.round = 0;
@@ -272,8 +328,14 @@ impl OrbitalBft {
                     }
                 }
             }
-            ConsensusMsg::Decide { height, block_hash, .. } => {
-                info!("Block decided: height={}, hash={}", height, hex::encode(&block_hash[..4]));
+            ConsensusMsg::Decide {
+                height, block_hash, ..
+            } => {
+                info!(
+                    "Block decided: height={}, hash={}",
+                    height,
+                    hex::encode(&block_hash[..4])
+                );
             }
         }
         Ok(())
@@ -312,7 +374,10 @@ mod tests {
             state_root: [0u8; 32],
             proposer: [0u8; 32],
         };
-        let block = Block { header, transactions: vec![] };
+        let block = Block {
+            header,
+            transactions: vec![],
+        };
         let h = block.hash();
         assert_eq!(h.len(), 32);
     }

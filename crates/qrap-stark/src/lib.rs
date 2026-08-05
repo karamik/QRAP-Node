@@ -1,8 +1,8 @@
 //! QRAP STARK Prover — Placeholder for Winterfell integration (v0.3.0)
-use serde::{Serialize, Deserialize};
+use qrap_crypto::{poseidon256, Hash};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::info;
-use qrap_crypto::{Hash, poseidon256};
 
 pub type StarkProofBytes = Vec<u8>;
 
@@ -19,7 +19,10 @@ pub enum StarkError {
 pub struct QrapStarkProver;
 
 impl QrapStarkProver {
-    pub fn prove_spend(secret: &[u8], public_commitment: &Hash) -> Result<StarkProofBytes, StarkError> {
+    pub fn prove_spend(
+        secret: &[u8],
+        public_commitment: &Hash,
+    ) -> Result<StarkProofBytes, StarkError> {
         info!("Generating STARK spend proof (placeholder v0.2.0)...");
         let mut chain = Vec::new();
         let mut current = secret.to_vec();
@@ -36,7 +39,7 @@ impl QrapStarkProver {
             .map_err(|e| StarkError::Serialization(e.to_string()))?;
         Ok(bytes)
     }
-    
+
     pub fn verify_spend(proof_bytes: &[u8], public_commitment: &Hash) -> Result<bool, StarkError> {
         let proof_data: SpendProofData = bincode::deserialize(proof_bytes)
             .map_err(|e| StarkError::Serialization(e.to_string()))?;
@@ -49,11 +52,11 @@ impl QrapStarkProver {
         }
         Ok(true)
     }
-    
+
     pub fn proof_size(proof_bytes: &[u8]) -> usize {
         proof_bytes.len()
     }
-    
+
     pub fn is_placeholder() -> bool {
         true
     }

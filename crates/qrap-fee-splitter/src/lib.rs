@@ -9,19 +9,19 @@
 //!
 //! Governance: 14-day timelock, max 5% change/epoch
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 /// Distribution categories
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Distribution {
-    Provers,      // 35% + FPGA bonus
-    Validators,   // 25% weighted by stake×uptime
-    Treasury,     // 20% 3/5 multi-sig
+    Provers,          // 35% + FPGA bonus
+    Validators,       // 25% weighted by stake×uptime
+    Treasury,         // 20% 3/5 multi-sig
     DataAvailability, // 15% Celestia/Blobstream
-    Burn,         // 5% deflationary
+    Burn,             // 5% deflationary
 }
 
 impl Distribution {
@@ -49,7 +49,7 @@ pub struct ProverInfo {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct ValidatorInfo {
     pub id: String,
-    pub stake: u64,      // in wei/gwei
+    pub stake: u64, // in wei/gwei
     pub uptime_secs: u64,
     pub blocks_proposed: u64,
 }
@@ -116,7 +116,7 @@ impl FeeSplitter {
         distribution.insert(Distribution::Treasury, 20);
         distribution.insert(Distribution::DataAvailability, 15);
         distribution.insert(Distribution::Burn, 5);
-        
+
         Self {
             distribution,
             governance: Governance::default(),
@@ -124,7 +124,7 @@ impl FeeSplitter {
             current_epoch: 0,
         }
     }
-    
+
     /// Validate distribution sums to 100%
     pub fn validate(&self) -> Result<(), FeeError> {
         let total: u16 = self.distribution.values().sum();
@@ -133,45 +133,61 @@ impl FeeSplitter {
         }
         Ok(())
     }
-    
+
     /// Calculate fee split for given amount
-    pub fn split(&self, amount: u64, provers: &[ProverInfo], validators: &[ValidatorInfo]) -> Result<FeeSplit, FeeError> {
+    pub fn split(
+        &self,
+        amount: u64,
+        provers: &[ProverInfo],
+        validators: &[ValidatorInfo],
+    ) -> Result<FeeSplit, FeeError> {
         self.validate()?;
-        
+
         let provers_pct = *self.distribution.get(&Distribution::Provers).unwrap_or(&35);
-        let validators_pct = *self.distribution.get(&Distribution::Validators).unwrap_or(&25);
-        let treasury_pct = *self.distribution.get(&Distribution::Treasury).unwrap_or(&20);
-        let da_pct = *self.distribution.get(&Distribution::DataAvailability).unwrap_or(&15);
+        let validators_pct = *self
+            .distribution
+            .get(&Distribution::Validators)
+            .unwrap_or(&25);
+        let treasury_pct = *self
+            .distribution
+            .get(&Distribution::Treasury)
+            .unwrap_or(&20);
+        let da_pct = *self
+            .distribution
+            .get(&Distribution::DataAvailability)
+            .unwrap_or(&15);
         let burn_pct = *self.distribution.get(&Distribution::Burn).unwrap_or(&5);
-        
+
         let provers_base = amount * provers_pct as u64 / 100;
         let validators_base = amount * validators_pct as u64 / 100;
         let treasury = amount * treasury_pct as u64 / 100;
         let da = amount * da_pct as u64 / 100;
         let burn = amount * burn_pct as u64 / 100;
-        
+
         // FPGA bonus: +20% of prover share
         let fpga_count = provers.iter().filter(|p| p.is_fpga).count() as u64;
         let total_proofs: u64 = provers.iter().map(|p| p.proofs_generated).sum();
         let prover_bonus = if total_proofs > 0 {
-            provers_base * self.fpga_bonus_bps as u64 / 10000 * fpga_count / provers.len().max(1) as u64
+            provers_base * self.fpga_bonus_bps as u64 / 10000 * fpga_count
+                / provers.len().max(1) as u64
         } else {
             0
         };
-        
+
         // Validator weighting: stake × uptime
-        let total_weight: u128 = validators.iter()
+        let total_weight: u128 = validators
+            .iter()
             .map(|v| v.stake as u128 * v.uptime_secs as u128)
             .sum();
-        
+
         let validators_final = if total_weight > 0 {
             validators_base // Simplified — in real impl, weighted per-validator
         } else {
             validators_base
         };
-        
+
         let provers_final = provers_base + prover_bonus;
-        
+
         // Ensure total doesn't exceed amount (rounding errors)
         let total_distributed = provers_final + validators_final + treasury + da + burn;
         let burn_adjusted = if total_distributed > amount {
@@ -179,10 +195,10 @@ impl FeeSplitter {
         } else {
             burn
         };
-        
+
         debug!("Fee split: amount={} | provers={} (bonus={}) | validators={} | treasury={} | da={} | burn={}",
                amount, provers_final, prover_bonus, validators_final, treasury, da, burn_adjusted);
-        
+
         Ok(FeeSplit {
             total_amount: amount,
             provers: provers_final,
@@ -194,55 +210,66 @@ impl FeeSplitter {
             epoch: self.current_epoch,
         })
     }
-    
+
     /// Propose distribution change (governance)
-    pub fn propose_change(&mut self, new_distribution: HashMap<Distribution, u16>, current_epoch: u64) -> Result<(), FeeError> {
+    pub fn propose_change(
+        &mut self,
+        new_distribution: HashMap<Distribution, u16>,
+        current_epoch: u64,
+    ) -> Result<(), FeeError> {
         // Check timelock
         let epochs_since_change = current_epoch.saturating_sub(self.governance.last_change_epoch);
         let min_epochs = self.governance.timelock_days as u64 * 24 * 60 * 60 / 6; // 6-sec blocks
-        
+
         if epochs_since_change < min_epochs {
             let remaining = ((min_epochs - epochs_since_change) * 6) / 86400;
             return Err(FeeError::TimelockActive(remaining as u16));
         }
-        
+
         // Check max change per epoch
         let mut max_change: u16 = 0;
         for (dist, &new_pct) in &new_distribution {
             let old_pct = self.distribution.get(dist).copied().unwrap_or(0);
-            let change = if new_pct > old_pct { new_pct - old_pct } else { old_pct - new_pct };
+            let change = if new_pct > old_pct {
+                new_pct - old_pct
+            } else {
+                old_pct - new_pct
+            };
             max_change = max_change.max(change);
         }
-        
+
         if max_change > self.governance.max_change_per_epoch_bps / 100 {
             return Err(FeeError::ChangeTooLarge(
                 max_change,
-                self.governance.max_change_per_epoch_bps / 100
+                self.governance.max_change_per_epoch_bps / 100,
             ));
         }
-        
+
         // Validate new distribution
         let total: u16 = new_distribution.values().sum();
         if total != 100 {
             return Err(FeeError::InvalidDistribution(total));
         }
-        
+
         self.distribution = new_distribution;
         self.governance.last_change_epoch = current_epoch;
         self.current_epoch = current_epoch;
-        
+
         info!("Fee distribution updated at epoch {}", current_epoch);
         Ok(())
     }
-    
+
     /// Check treasury multi-sig
     pub fn check_treasury_sig(&self, sigs: u8) -> Result<(), FeeError> {
         if sigs < self.governance.multi_sig_threshold {
-            return Err(FeeError::MultiSigRequired(sigs, self.governance.multi_sig_threshold));
+            return Err(FeeError::MultiSigRequired(
+                sigs,
+                self.governance.multi_sig_threshold,
+            ));
         }
         Ok(())
     }
-    
+
     /// Advance epoch
     pub fn advance_epoch(&mut self) {
         self.current_epoch += 1;
@@ -266,13 +293,26 @@ mod tests {
     fn test_fee_split_basic() {
         let splitter = FeeSplitter::new();
         let provers = vec![
-            ProverInfo { id: "p1".to_string(), is_fpga: true, proofs_generated: 100, uptime_secs: 3600 },
-            ProverInfo { id: "p2".to_string(), is_fpga: false, proofs_generated: 50, uptime_secs: 3600 },
+            ProverInfo {
+                id: "p1".to_string(),
+                is_fpga: true,
+                proofs_generated: 100,
+                uptime_secs: 3600,
+            },
+            ProverInfo {
+                id: "p2".to_string(),
+                is_fpga: false,
+                proofs_generated: 50,
+                uptime_secs: 3600,
+            },
         ];
-        let validators = vec![
-            ValidatorInfo { id: "v1".to_string(), stake: 1000, uptime_secs: 3600, blocks_proposed: 10 },
-        ];
-        
+        let validators = vec![ValidatorInfo {
+            id: "v1".to_string(),
+            stake: 1000,
+            uptime_secs: 3600,
+            blocks_proposed: 10,
+        }];
+
         let split = splitter.split(10000, &provers, &validators).unwrap();
         assert_eq!(split.total_amount, 10000);
         assert_eq!(split.provers, 3500 + split.prover_bonus);
@@ -287,11 +327,21 @@ mod tests {
     fn test_fpga_bonus_calculation() {
         let splitter = FeeSplitter::new();
         let provers = vec![
-            ProverInfo { id: "fpga1".to_string(), is_fpga: true, proofs_generated: 1000, uptime_secs: 86400 },
-            ProverInfo { id: "cpu1".to_string(), is_fpga: false, proofs_generated: 100, uptime_secs: 86400 },
+            ProverInfo {
+                id: "fpga1".to_string(),
+                is_fpga: true,
+                proofs_generated: 1000,
+                uptime_secs: 86400,
+            },
+            ProverInfo {
+                id: "cpu1".to_string(),
+                is_fpga: false,
+                proofs_generated: 100,
+                uptime_secs: 86400,
+            },
         ];
         let validators = vec![];
-        
+
         let split = splitter.split(100000, &provers, &validators).unwrap();
         // 35% base = 35000, bonus = 35000 * 0.20 * 1/2 = 3500
         assert!(split.prover_bonus > 0);
@@ -304,7 +354,7 @@ mod tests {
         let mut new_dist = splitter.distribution.clone();
         new_dist.insert(Distribution::Provers, 36);
         new_dist.insert(Distribution::Validators, 24);
-        
+
         // Should fail — timelock not expired
         let result = splitter.propose_change(new_dist.clone(), 1);
         assert!(matches!(result, Err(FeeError::TimelockActive(_))));
@@ -315,7 +365,7 @@ mod tests {
         let mut splitter = FeeSplitter::new();
         let mut new_dist = splitter.distribution.clone();
         new_dist.insert(Distribution::Provers, 50); // +15%, exceeds 5% max
-        
+
         let result = splitter.propose_change(new_dist, 201600); // ~14 days of 6-sec blocks
         assert!(matches!(result, Err(FeeError::ChangeTooLarge(15, 5))));
     }
@@ -325,14 +375,19 @@ mod tests {
         let splitter = FeeSplitter::new();
         assert!(splitter.check_treasury_sig(3).is_ok());
         assert!(splitter.check_treasury_sig(5).is_ok());
-        assert!(matches!(splitter.check_treasury_sig(2), Err(FeeError::MultiSigRequired(2, 3))));
+        assert!(matches!(
+            splitter.check_treasury_sig(2),
+            Err(FeeError::MultiSigRequired(2, 3))
+        ));
     }
 
     #[test]
     fn test_invalid_distribution() {
         let mut splitter = FeeSplitter::new();
         splitter.distribution.insert(Distribution::Provers, 50);
-        assert!(matches!(splitter.validate(), Err(FeeError::InvalidDistribution(_))));
+        assert!(matches!(
+            splitter.validate(),
+            Err(FeeError::InvalidDistribution(_))
+        ));
     }
 }
-

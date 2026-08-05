@@ -1,6 +1,6 @@
 //! Length-prefixed message codec for P2P mesh
 
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -15,8 +15,7 @@ pub enum CodecError {
 
 /// Encode a serializable message into length-prefixed bytes.
 pub fn encode<T: Serialize>(msg: &T) -> Result<Vec<u8>, CodecError> {
-    let payload = bincode::serialize(msg)
-        .map_err(|e| CodecError::Serialization(e.to_string()))?;
+    let payload = bincode::serialize(msg).map_err(|e| CodecError::Serialization(e.to_string()))?;
     let len = payload.len() as u32;
     let mut buf = Vec::with_capacity(4 + payload.len());
     buf.extend_from_slice(&len.to_be_bytes());
@@ -51,7 +50,10 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
-        let msg = TestMsg { id: 42, data: "hello".into() };
+        let msg = TestMsg {
+            id: 42,
+            data: "hello".into(),
+        };
         let encoded = encode(&msg).unwrap();
         let (decoded, consumed) = decode_one::<TestMsg>(&encoded).unwrap().unwrap();
         assert_eq!(msg, decoded);

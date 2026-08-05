@@ -1,11 +1,11 @@
 //! AMD Versal XQRVC1902 — Space-Grade Radiation-Hardened Prover
 
-use crate::{FpgaProver, FpgaHealth, PowerState, PlonkInput, PlonkProof, FpgaError, RadEvent};
+use crate::{FpgaError, FpgaHealth, FpgaProver, PlonkInput, PlonkProof, PowerState, RadEvent};
 use async_trait::async_trait;
 use qrap_crypto::poseidon256_pair;
-use tracing::{info, debug, warn};
-use std::time::Instant;
 use std::collections::VecDeque;
+use std::time::Instant;
+use tracing::{debug, info, warn};
 
 pub struct XiisemConfig {
     pub frequency_mhz: u32,
@@ -15,7 +15,11 @@ pub struct XiisemConfig {
 
 impl Default for XiisemConfig {
     fn default() -> Self {
-        Self { frequency_mhz: 320, scan_period_ms: 13.6, scrub_interval_ms: 100 }
+        Self {
+            frequency_mhz: 320,
+            scan_period_ms: 13.6,
+            scrub_interval_ms: 100,
+        }
     }
 }
 
@@ -25,17 +29,25 @@ pub struct TmrVoter<T: Clone + PartialEq> {
 
 impl<T: Clone + PartialEq> TmrVoter<T> {
     pub fn new() -> Self {
-        Self { modules: [None, None, None] }
+        Self {
+            modules: [None, None, None],
+        }
     }
     pub fn set(&mut self, module: usize, value: T) {
-        if module < 3 { self.modules[module] = Some(value); }
+        if module < 3 {
+            self.modules[module] = Some(value);
+        }
     }
     pub fn vote(&self) -> Option<T> {
         let vals: Vec<_> = self.modules.iter().flatten().collect();
-        if vals.len() < 2 { return None; }
+        if vals.len() < 2 {
+            return None;
+        }
         for i in 0..vals.len() {
-            for j in (i+1)..vals.len() {
-                if vals[i] == vals[j] { return Some(vals[i].clone()); }
+            for j in (i + 1)..vals.len() {
+                if vals[i] == vals[j] {
+                    return Some(vals[i].clone());
+                }
             }
         }
         None
@@ -73,11 +85,17 @@ impl RadHardState {
     }
     pub fn create_checkpoint(&mut self, epoch: u64, block: u64, state_hash: [u8; 32]) {
         let cp = Checkpoint {
-            epoch, block, state_hash,
+            epoch,
+            block,
+            state_hash,
             timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs(),
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
         };
-        if self.checkpoints.len() >= self.max_checkpoints { self.checkpoints.pop_front(); }
+        if self.checkpoints.len() >= self.max_checkpoints {
+            self.checkpoints.pop_front();
+        }
         self.checkpoints.push_back(cp);
         debug!("Checkpoint: epoch={}, block={}", epoch, block);
     }
@@ -105,9 +123,12 @@ impl VersalProver {
     pub fn new() -> Self {
         Self {
             health: FpgaHealth {
-                temperature_c: -40.0, voltage_core: 0.72,
-                scrubber_cycles: 0, radiation_events: 0,
-                power_state: PowerState::Eco, uptime_secs: 0,
+                temperature_c: -40.0,
+                voltage_core: 0.72,
+                scrubber_cycles: 0,
+                radiation_events: 0,
+                power_state: PowerState::Eco,
+                uptime_secs: 0,
             },
             power: PowerState::Eco,
             start_time: Instant::now(),
@@ -120,20 +141,37 @@ impl VersalProver {
         let start = Instant::now();
         for module in 0..3 {
             let mut hash = [0u8; 32];
-            for nf in &input.nullifiers { hash = poseidon256_pair(&hash, nf); }
-            for cm in &input.commitments { hash = poseidon256_pair(&hash, cm); }
+            for nf in &input.nullifiers {
+                hash = poseidon256_pair(&hash, nf);
+            }
+            for cm in &input.commitments {
+                hash = poseidon256_pair(&hash, cm);
+            }
             if self.fault_injection_enabled && module == 1 {
                 hash[0] ^= 0xFF;
                 debug!("TMR module 1: injected SEU");
             }
             self.rad_state.tmr_voter.set(module, hash);
         }
-        let result = self.rad_state.tmr_voter.vote()
+        let result = self
+            .rad_state
+            .tmr_voter
+            .vote()
             .ok_or_else(|| FpgaError::RadiationFault("TMR majority failure".to_string()))?;
-        let mismatches = self.rad_state.tmr_voter.modules.iter().flatten().filter(|m| **m != result).count();
+        let mismatches = self
+            .rad_state
+            .tmr_voter
+            .modules
+            .iter()
+            .flatten()
+            .filter(|m| **m != result)
+            .count();
         if mismatches > 0 {
             self.health.radiation_events += 1;
-            warn!("Radiation event! {} TMR mismatch(es) corrected.", mismatches);
+            warn!(
+                "Radiation event! {} TMR mismatch(es) corrected.",
+                mismatches
+            );
         }
         self.rad_state.create_checkpoint(0, 0, result);
         let total = start.elapsed();
@@ -148,7 +186,10 @@ impl VersalProver {
     }
     pub fn enable_fault_injection(&mut self, enable: bool) {
         self.fault_injection_enabled = enable;
-        info!("Versal fault injection: {}", if enable { "ON" } else { "OFF" });
+        info!(
+            "Versal fault injection: {}",
+            if enable { "ON" } else { "OFF" }
+        );
     }
 }
 
@@ -156,11 +197,16 @@ impl VersalProver {
 impl FpgaProver for VersalProver {
     async fn init(&mut self) -> Result<(), FpgaError> {
         info!("Versal XQRVC1902 | TID 120krad | SEL>80 MeV·cm²/mg");
-        info!("XiISEM: {}MHz / {}ms scan", self.rad_state.scrubber.frequency_mhz, self.rad_state.scrubber.scan_period_ms);
+        info!(
+            "XiISEM: {}MHz / {}ms scan",
+            self.rad_state.scrubber.frequency_mhz, self.rad_state.scrubber.scan_period_ms
+        );
         Ok(())
     }
     async fn prove(&mut self, input: PlonkInput) -> Result<PlonkProof, FpgaError> {
-        if self.rad_state.should_scrub() { self.scrub().await?; }
+        if self.rad_state.should_scrub() {
+            self.scrub().await?;
+        }
         self.tmr_prove(&input)
     }
     async fn set_power(&mut self, state: PowerState) -> Result<(), FpgaError> {
@@ -181,7 +227,10 @@ impl FpgaProver for VersalProver {
         Ok(vec![])
     }
     async fn reconfigure(&mut self, bitstream: &[u8]) -> Result<(), FpgaError> {
-        info!("Versal reconfig: {} bytes | ICAP+PRC ready", bitstream.len());
+        info!(
+            "Versal reconfig: {} bytes | ICAP+PRC ready",
+            bitstream.len()
+        );
         Ok(())
     }
 }
@@ -200,14 +249,18 @@ mod tests {
     #[tokio::test]
     async fn test_tmr_voting() {
         let mut v = TmrVoter::new();
-        v.set(0, [1u8; 32]); v.set(1, [1u8; 32]); v.set(2, [2u8; 32]);
+        v.set(0, [1u8; 32]);
+        v.set(1, [1u8; 32]);
+        v.set(2, [2u8; 32]);
         assert_eq!(v.vote().unwrap(), [1u8; 32]);
     }
 
     #[tokio::test]
     async fn test_tmr_fault() {
         let mut v = TmrVoter::new();
-        v.set(0, [1u8; 32]); v.set(1, [2u8; 32]); v.set(2, [3u8; 32]);
+        v.set(0, [1u8; 32]);
+        v.set(1, [2u8; 32]);
+        v.set(2, [3u8; 32]);
         assert!(v.is_faulty());
         assert!(v.vote().is_none());
     }
@@ -217,11 +270,14 @@ mod tests {
         let mut p = VersalProver::new();
         p.init().await.unwrap();
         p.enable_fault_injection(true);
-        let proof = p.prove(PlonkInput {
-            nullifiers: vec![[0x01; 32]],
-            commitments: vec![[0x02; 32]],
-            public_inputs: vec![100],
-        }).await.unwrap();
+        let proof = p
+            .prove(PlonkInput {
+                nullifiers: vec![[0x01; 32]],
+                commitments: vec![[0x02; 32]],
+                public_inputs: vec![100],
+            })
+            .await
+            .unwrap();
         assert_eq!(p.health().await.radiation_events, 1);
         assert!(!proof.proof_bytes.is_empty());
     }

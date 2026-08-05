@@ -1,11 +1,11 @@
-use tokio::net::{TcpListener, TcpStream};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use serde::{Serialize, Deserialize};
-use serde_json::Value;
-use std::net::SocketAddr;
-use tracing::{info, warn};
 use anyhow::Result;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::net::SocketAddr;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+use tracing::{info, warn};
 
 #[derive(Debug, Deserialize)]
 pub struct JsonRpcRequest {
@@ -58,38 +58,42 @@ async fn handle_connection(
 
     loop {
         let n = stream.read(&mut buf[cursor..]).await?;
-        if n == 0 { break; }
+        if n == 0 {
+            break;
+        }
         cursor += n;
 
         if let Some(header_end) = find_header_end(&buf[..cursor]) {
             let request = String::from_utf8_lossy(&buf[..header_end]);
             let body = parse_http_body(&request, &buf[header_end..cursor]);
-            
+
             let response_body = match serde_json::from_str::<JsonRpcRequest>(&body) {
-                Ok(req) => {
-                    match handler.handle(&req.method, &req.params).await {
-                        Ok(result) => serde_json::to_string(&JsonRpcResponse {
-                            jsonrpc: "2.0".into(),
-                            result: Some(result),
-                            error: None,
-                            id: req.id,
-                        })?,
-                        Err(msg) => serde_json::to_string(&JsonRpcResponse {
-                            jsonrpc: "2.0".into(),
-                            result: None,
-                            error: Some(JsonRpcError { code: -32603, message: msg }),
-                            id: req.id,
-                        })?,
-                    }
-                }
-                Err(e) => {
-                    serde_json::to_string(&JsonRpcResponse {
+                Ok(req) => match handler.handle(&req.method, &req.params).await {
+                    Ok(result) => serde_json::to_string(&JsonRpcResponse {
+                        jsonrpc: "2.0".into(),
+                        result: Some(result),
+                        error: None,
+                        id: req.id,
+                    })?,
+                    Err(msg) => serde_json::to_string(&JsonRpcResponse {
                         jsonrpc: "2.0".into(),
                         result: None,
-                        error: Some(JsonRpcError { code: -32700, message: e.to_string() }),
-                        id: Value::Null,
-                    })?
-                }
+                        error: Some(JsonRpcError {
+                            code: -32603,
+                            message: msg,
+                        }),
+                        id: req.id,
+                    })?,
+                },
+                Err(e) => serde_json::to_string(&JsonRpcResponse {
+                    jsonrpc: "2.0".into(),
+                    result: None,
+                    error: Some(JsonRpcError {
+                        code: -32700,
+                        message: e.to_string(),
+                    }),
+                    id: Value::Null,
+                })?,
             };
 
             let http_response = format!(
@@ -111,11 +115,14 @@ async fn handle_connection(
 
 fn find_header_end(buf: &[u8]) -> Option<usize> {
     let needle = b"\r\n\r\n";
-    buf.windows(needle.len()).position(|w| w == needle).map(|i| i + needle.len())
+    buf.windows(needle.len())
+        .position(|w| w == needle)
+        .map(|i| i + needle.len())
 }
 
 fn parse_http_body(headers: &str, trailing: &[u8]) -> String {
-    let cl = headers.lines()
+    let cl = headers
+        .lines()
         .find_map(|l| l.strip_prefix("Content-Length: "))
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(0);

@@ -1,10 +1,10 @@
 //! Tokio-based TCP transport (Termux-compatible)
 
-use tokio::net::{TcpListener, TcpStream};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tracing::{info, error};
-use std::net::SocketAddr;
 use anyhow::Result;
+use std::net::SocketAddr;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+use tracing::{error, info};
 
 pub async fn accept_loop<F>(bind_addr: SocketAddr, handler: F) -> Result<()>
 where
@@ -36,7 +36,9 @@ pub async fn read_exact(stream: &mut TcpStream, buf: &mut [u8]) -> Result<usize>
     while read < buf.len() {
         let n = stream.read(&mut buf[read..]).await?;
         if n == 0 {
-            return Err(std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "peer closed").into());
+            return Err(
+                std::io::Error::new(std::io::ErrorKind::UnexpectedEof, "peer closed").into(),
+            );
         }
         read += n;
     }
