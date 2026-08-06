@@ -22,7 +22,7 @@ jobs:
           components: rustfmt, clippy
       - run: sudo apt-get update && sudo apt-get install -y build-essential
       - run: cargo fmt --all -- --check
-      - run: cargo clean -p qrap-fpga && cargo clippy --workspace --all-targets --features mock,versal -- -D warnings
+      - run: cargo clippy --workspace --all-targets --features mock,versal -- -D warnings
 
   test-rust:
     name: Rust Tests
@@ -30,9 +30,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - run: sudo apt-get update && sudo apt-get install -y build-essential
-      - run: cargo clean -p qrap-fpga && cargo test --workspace --features mock,versal
+      - run: cargo test --workspace --features mock,versal
 
   test-simulators:
     name: Python Simulators
@@ -54,9 +53,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - run: sudo apt-get update && sudo apt-get install -y build-essential
-      - run: cargo clean -p qrap-fpga && cargo build --release --workspace
+      - run: cargo build --release --workspace
       - uses: actions/upload-artifact@v4
         with:
           name: qrap-release
