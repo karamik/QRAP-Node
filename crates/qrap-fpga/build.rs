@@ -11,24 +11,26 @@ fn main() {
 
     // AWS-F1 feature detected via cargo env var
     if env::var("CARGO_FEATURE_AWS_F1").is_ok() {
-        // Check if OpenCL is available on build machine
         let has_opencl = Command::new("pkg-config")
             .args(["--exists", "OpenCL"])
             .status()
             .map(|s| s.success())
             .unwrap_or(false);
 
+        let mut build = cc::Build::new();
+        build
+            .cpp(true)
+            .include("src/aws_f1/kernels")
+            .flag("-std=c++14")
+            .flag("-O2");
+
         if has_opencl {
-            cc::Build::new()
-                .cpp(true)
-                .file("src/aws_f1/host/qrap_f1_host.cpp")
-                .include("src/aws_f1/kernels")
-                .flag("-std=c++14")
-                .flag("-O2")
-                .compile("qrap_f1_host");
+            build.file("src/aws_f1/host/qrap_f1_host.cpp");
             println!("cargo:rustc-link-lib=OpenCL");
         } else {
-            println!("cargo:warning=OpenCL not found, skipping F1 host C++ compilation");
+            build.file("src/aws_f1/host/stub.cpp");
+            println!("cargo:warning=OpenCL not found, using stub F1 host");
         }
+        build.compile("qrap_f1_host");
     }
 }

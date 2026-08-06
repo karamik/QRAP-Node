@@ -106,3 +106,24 @@ int qrap_f1_ntt(void* h, qrap_fe256_t* inout, const qrap_fe256_t* tw, uint32_t l
 }
 
 } /* extern "C" */
+
+// Standalone test main (optional, for hw_emu/hw validation)
+#ifdef QRAP_F1_STANDALONE
+#include <cstdio>
+#include <cstdlib>
+
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <xclbin_path>\n", argv[0]);
+        return 1;
+    }
+    QrapF1Host host;
+    int rc = host.init(argv[1]);
+    if (rc != 0) {
+        fprintf(stderr, "F1 init failed: %d\n", rc);
+        return 1;
+    }
+    printf("AWS F1 initialized: %s\n", argv[1]);
+    return 0;
+}
+#endif
