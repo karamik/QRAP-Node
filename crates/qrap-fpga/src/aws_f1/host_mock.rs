@@ -5,7 +5,13 @@ pub struct MockHost;
 
 impl MockHost {
     pub fn new() -> Self { Self }
+}
 
+impl Default for MockHost {
+    fn default() -> Self { Self::new() }
+}
+
+impl MockHost {
     pub fn init(&self, _xclbin: &str) -> Result<(), i32> { Ok(()) }
 
     pub fn fe_mul_batch(&self, a: &[Fe256], b: &[Fe256]) -> Vec<Fe256> {

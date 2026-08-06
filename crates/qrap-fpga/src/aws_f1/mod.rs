@@ -3,6 +3,7 @@
 
 pub mod field_cpu;
 pub mod host_mock;
+pub mod prover;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -53,6 +54,10 @@ pub struct F1Accelerator {
     mock: host_mock::MockHost,
     #[cfg(all(not(target_arch = "aarch64"), not(target_os = "android")))]
     handle: *mut std::os::raw::c_void,
+}
+
+impl Default for F1Accelerator {
+    fn default() -> Self { Self::new() }
 }
 
 impl F1Accelerator {
@@ -107,4 +112,3 @@ impl Drop for F1Accelerator {
 
 #[cfg(test)]
 mod tests;
-pub mod prover;

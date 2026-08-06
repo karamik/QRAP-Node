@@ -5,6 +5,10 @@ pub struct AwsF1Prover {
     accel: F1Accelerator,
 }
 
+impl Default for AwsF1Prover {
+    fn default() -> Self { Self::new() }
+}
+
 impl AwsF1Prover {
     pub fn new() -> Self {
         Self { accel: F1Accelerator::new() }
