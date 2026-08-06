@@ -24,5 +24,3 @@ mock = []
 versal = []
 aws-f1 = ["libc", "cc"]
 
-[build-dependencies]
-cc = "1.0"
