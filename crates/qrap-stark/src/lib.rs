@@ -1,8 +1,10 @@
-//! QRAP STARK Prover — Placeholder for Winterfell integration (v0.3.0)
+//! QRAP STARK/PLONK Prover — Winterfell + AWS F1 integration
 use qrap_crypto::{poseidon256, Hash};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::info;
+
+pub mod plonk;
 
 pub type StarkProofBytes = Vec<u8>;
 

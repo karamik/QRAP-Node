@@ -12,3 +12,10 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 qrap-crypto = { workspace = true }
+qrap-fpga = { workspace = true, optional = true }
+
+[features]
+default = []
+mock = []
+versal = []
+aws-f1 = ["qrap-fpga/aws-f1"]

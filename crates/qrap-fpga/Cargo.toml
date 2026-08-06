@@ -9,7 +9,6 @@ repository.workspace = true
 [dependencies]
 cc = { version = "1.0", optional = true }
 qrap-crypto = { workspace = true }
-qrap-stark = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
@@ -23,4 +22,3 @@ default = ["mock"]
 mock = []
 versal = []
 aws-f1 = ["libc", "cc"]
-
