@@ -2,7 +2,7 @@ use std::env;
 
 fn main() {
     let target = env::var("TARGET").unwrap();
-    
+
     // Termux / Android — skip C++ compilation, no FPGA toolchain
     if target.contains("aarch64") || target.contains("android") {
         return;

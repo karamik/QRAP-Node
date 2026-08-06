@@ -205,7 +205,6 @@ impl FpgaProver for MockFpga {
 
 // ============== AWS F1 IMPLEMENTATION ==============
 
-
 #[cfg(feature = "versal")]
 pub mod versal;
 

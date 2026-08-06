@@ -36,16 +36,25 @@ pub struct ProjPoint {
 #[cfg(all(not(target_arch = "aarch64"), not(target_os = "android")))]
 mod real_host {
     use super::*;
-    use std::os::raw::{c_void, c_char, c_int};
+    use std::os::raw::{c_char, c_int, c_void};
 
     extern "C" {
         pub fn qrap_f1_create() -> *mut c_void;
         pub fn qrap_f1_destroy(handle: *mut c_void);
         pub fn qrap_f1_init(handle: *mut c_void, xclbin: *const c_char) -> c_int;
-        pub fn qrap_f1_fe_mul(handle: *mut c_void, a: *const Fe256, b: *const Fe256,
-                              c: *mut Fe256, n: u32) -> c_int;
-        pub fn qrap_f1_ntt(handle: *mut c_void, inout: *mut Fe256,
-                           twiddles: *const Fe256, log_n: u32) -> c_int;
+        pub fn qrap_f1_fe_mul(
+            handle: *mut c_void,
+            a: *const Fe256,
+            b: *const Fe256,
+            c: *mut Fe256,
+            n: u32,
+        ) -> c_int;
+        pub fn qrap_f1_ntt(
+            handle: *mut c_void,
+            inout: *mut Fe256,
+            twiddles: *const Fe256,
+            log_n: u32,
+        ) -> c_int;
     }
 }
 
@@ -57,31 +66,49 @@ pub struct F1Accelerator {
 }
 
 impl Default for F1Accelerator {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl F1Accelerator {
     pub fn new() -> Self {
         #[cfg(any(target_arch = "aarch64", target_os = "android"))]
-        { Self { mock: host_mock::MockHost::new() } }
+        {
+            Self {
+                mock: host_mock::MockHost::new(),
+            }
+        }
         #[cfg(all(not(target_arch = "aarch64"), not(target_os = "android")))]
-        { Self { handle: unsafe { real_host::qrap_f1_create() } } }
+        {
+            Self {
+                handle: unsafe { real_host::qrap_f1_create() },
+            }
+        }
     }
 
     pub fn init(&self, xclbin_path: &str) -> Result<(), i32> {
         #[cfg(any(target_arch = "aarch64", target_os = "android"))]
-        { self.mock.init(xclbin_path) }
+        {
+            self.mock.init(xclbin_path)
+        }
         #[cfg(all(not(target_arch = "aarch64"), not(target_os = "android")))]
         {
             let c_path = std::ffi::CString::new(xclbin_path).unwrap();
             let rc = unsafe { real_host::qrap_f1_init(self.handle, c_path.as_ptr()) };
-            if rc == 0 { Ok(()) } else { Err(rc) }
+            if rc == 0 {
+                Ok(())
+            } else {
+                Err(rc)
+            }
         }
     }
 
     pub fn fe_mul_batch(&self, a: &[Fe256], b: &[Fe256]) -> Vec<Fe256> {
         #[cfg(any(target_arch = "aarch64", target_os = "android"))]
-        { self.mock.fe_mul_batch(a, b) }
+        {
+            self.mock.fe_mul_batch(a, b)
+        }
         #[cfg(all(not(target_arch = "aarch64"), not(target_os = "android")))]
         {
             let n = a.len() as u32;
@@ -95,7 +122,9 @@ impl F1Accelerator {
 
     pub fn ntt(&self, data: &mut [Fe256], twiddles: &[Fe256], log_n: u32) {
         #[cfg(any(target_arch = "aarch64", target_os = "android"))]
-        { self.mock.ntt(data, twiddles, log_n) }
+        {
+            self.mock.ntt(data, twiddles, log_n)
+        }
         #[cfg(all(not(target_arch = "aarch64"), not(target_os = "android")))]
         unsafe {
             real_host::qrap_f1_ntt(self.handle, data.as_mut_ptr(), twiddles.as_ptr(), log_n);
@@ -106,7 +135,9 @@ impl F1Accelerator {
 impl Drop for F1Accelerator {
     fn drop(&mut self) {
         #[cfg(all(not(target_arch = "aarch64"), not(target_os = "android")))]
-        unsafe { real_host::qrap_f1_destroy(self.handle); }
+        unsafe {
+            real_host::qrap_f1_destroy(self.handle);
+        }
     }
 }
 

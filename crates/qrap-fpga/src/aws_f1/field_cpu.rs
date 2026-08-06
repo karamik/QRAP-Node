@@ -1,5 +1,5 @@
 //! Reference CPU implementation of 256-bit BN254 field arithmetic
-use super::{Fe256, ProjPoint, AffinePoint};
+use super::{AffinePoint, Fe256, ProjPoint};
 
 /// BN254 prime p (little-endian)
 pub const P: Fe256 = Fe256 {

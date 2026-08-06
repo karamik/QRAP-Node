@@ -6,12 +6,16 @@ pub struct AwsF1Prover {
 }
 
 impl Default for AwsF1Prover {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AwsF1Prover {
     pub fn new() -> Self {
-        Self { accel: F1Accelerator::new() }
+        Self {
+            accel: F1Accelerator::new(),
+        }
     }
 
     pub fn init(&self, xclbin: &str) -> Result<(), i32> {

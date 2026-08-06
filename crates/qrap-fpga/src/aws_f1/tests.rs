@@ -1,4 +1,4 @@
-use super::{Fe256, F1Accelerator};
+use super::{F1Accelerator, Fe256};
 
 #[test]
 fn test_fe_add_mod() {
