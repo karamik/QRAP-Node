@@ -6,23 +6,44 @@ Space-grade ZK-rollup node with on-orbit proof generation, Celestia DA, and Orbi
 
 ## Architecture
 
-
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        QRAP Node                            │
+├─────────────┬─────────────┬─────────────┬─────────────────┤
+│  qrap-crypto │ qrap-fee   │   qrap-da   │   qrap-fpga     │
+│  Poseidon256 │ splitter   │  Celestia   │  AWS F1 /       │
+│  LWE, ML-DSA │ 35/25/20/  │  Blobstream │  Versal XQRVC   │
+│              │ 15/5%      │  DAS        │  1902           │
+├─────────────┴─────────────┴─────────────┴─────────────────┤
+│                    qrap-consensus                           │
+│              Orbital BFT — leader rotation                  │
+│              View change, 2f+1 quorum                       │
+├─────────────────────────────────────────────────────────────┤
+│  qrap-net  │  qrap-storage  │  qrap-utxo  │  qrap-stark   │
+│  P2P, codec│  Sparse Merkle │  Commitments│  PLONK/STARK  │
+│            │  Tree, sled    │             │  proofs       │
+├─────────────────────────────────────────────────────────────┤
+│                    qrap-sim                                 │
+│  Byzantine, partition, FPGA degradation, DA failure         │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## Crates
 
 | Crate | Tests | Description |
 |-------|-------|-------------|
-|  | 8 | Poseidon hash, LWE commitments, ML-DSA/KEM |
-|  | 7 | Fee split 35/25/20/15/5%, governance timelock |
-|  | 12 | Celestia blob submit, Blobstream verify, DAS |
-|  | 6 | Mock/Versal/AWS-F1 provers, TMR, radiation scrubber |
-|  | 6 | Orbital BFT, leader rotation, view change |
-|  | 6 | Sparse Merkle Tree, sled persistence |
-|  | 6 | P2P message serialization, NodeId, codec |
-|  | 6 | Byzantine, partition, FPGA degradation, DA failure |
-|  | 4 | STARK prove/verify placeholder |
-|  | 3 | E2E integration |
-| **Total** | **70** | **0 failed** |
+| `qrap-crypto` | 2 | Poseidon hash, LWE commitments, ML-DSA/KEM |
+| `qrap-fee-splitter` | 8 | Fee split 35/25/20/15/5%, governance timelock |
+| `qrap-da` | 12 | Celestia blob submit, Blobstream verify, DAS |
+| `qrap-fpga` | 7 | Mock/Versal/AWS-F1 provers, TMR, radiation scrubber |
+| `qrap-consensus` | 7 | Orbital BFT, leader rotation, view change |
+| `qrap-storage` | 6 | Sparse Merkle Tree, sled persistence |
+| `qrap-net` | 0 | P2P message serialization, NodeId, codec |
+| `qrap-utxo` | 2 | UTXO commitments, spend verification |
+| `qrap-sim` | 6 | Byzantine, partition, FPGA degradation, DA failure |
+| `qrap-stark` | 6 | STARK spend proof + PLONK prover with AWS F1 |
+| `qrap-node` | 3 | E2E integration, CLI |
+| **Total** | **59** | **0 failed** |
 
 ## Formal Verification
 
@@ -35,14 +56,35 @@ Space-grade ZK-rollup node with on-orbit proof generation, Celestia DA, and Orbi
 
 ## Quick Start
 
+```bash
+# Clone
+git clone https://github.com/karamik/QRAP-Node.git
+cd QRAP-Node
 
+# Test (mock mode — no FPGA required)
+cargo test --workspace --features mock
+
+# Test with AWS F1 support (requires OpenCL headers on x86)
+cargo test -p qrap-fpga --features aws-f1
+
+# Build release
+cargo build --release --workspace
+```
 
 ## FPGA Targets
 
 | Platform | Chip | PLONK Proof | Power |
 |----------|------|-------------|-------|
-| AWS F1 | Xilinx VU9P | 5-10s (software fallback) | 25-67W |
-| Sentinel Space | AMD Versal XQRVC1902 | 1.6s (Full) / 4.0s (Eco) | 25-67W |
+| **AWS F1** | Xilinx VU9P | 5-10s (hw_emu) | 25-67W |
+| **Sentinel Space** | AMD Versal XQRVC1902 | 1.6s (Full) / 4.0s (Eco) | 25-67W |
+
+### AWS F1 Build
+
+```bash
+cd crates/qrap-fpga
+./build_xclbin.sh hw_emu   # Hardware emulation (fast debug)
+./build_xclbin.sh hw       # Real FPGA bitstream (4-6 hours)
+```
 
 ## Roadmap
 
