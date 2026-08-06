@@ -474,7 +474,7 @@ mod tests {
             timestamp: 1000,
         };
         let result = verifier.verify_header_chain(&[h1]);
-        assert_eq!(result.unwrap(), false);
+        assert!(!result.unwrap());
     }
 
     #[test]
@@ -482,7 +482,7 @@ mod tests {
         let trusted_root = [0xAA; 32];
         let verifier = BlobstreamVerifier::new(0, trusted_root);
         let result = verifier.verify_header_chain(&[]);
-        assert_eq!(result.unwrap(), true);
+        assert!(result.unwrap());
     }
 
     #[test]
