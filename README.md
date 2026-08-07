@@ -6,6 +6,7 @@ Space-grade ZK-rollup node with on-orbit proof generation, Celestia DA, and Orbi
 
 ## Architecture
 
+<<<<<<< Updated upstream
 - **qrap-crypto** вЂ” Poseidon hash, LWE commitments, ML-DSA/KEM
 - **qrap-fee-splitter** вЂ” Fee split 35/25/20/15/5%, governance timelock
 - **qrap-da** вЂ” Celestia blob submit, Blobstream verify, DAS
@@ -95,3 +96,5 @@ For commercial licensing inquiries:
 ## Contributing
 
 See [docs/VALIDATOR_GUIDE.md](docs/VALIDATOR_GUIDE.md) for setup instructions.
+=======
+>>>>>>> Stashed changes
